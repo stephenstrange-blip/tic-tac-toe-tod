@@ -1,0 +1,23 @@
+.body-container, body, div[class^=cell] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+body {
+    padding: 5rem;
+}
+.board {
+    display: grid;
+    grid-template: repeat(3, minmax(150px, 1fr)) / repeat(3, minmax(150px, 1fr));
+    gap: 1rem;
+}
+.board > *  {
+    border: .5px solid black;
+    border-radius: 15px;
+    font-size: 80px;
+    transition-duration: .5s;
+
+}
+.board >*:hover {
+    box-shadow: rgb(128, 127, 127) 0 0 1rem inset;
+}

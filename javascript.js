@@ -1,7 +1,7 @@
 // A target is the Cell() that a player marks during his move
 // A player's mark is either X or O for tic-tac-toe
 // Each player should input a row and column to determine where to input his mark
-function Board() {
+function GameBoard() {
     const columns = 3;
     const rows = 3;
     const board = [];
@@ -12,12 +12,28 @@ function Board() {
     let boardStatus = '';
     let winner = undefined;
 
-    for (let i = 0; i < rows; i++) {
-        board[i] = []
-        for (let j = 0; j < columns; j++) {
-            board[i].push(Cell());
+    // IIFEs for creating the board, both console and DOM
+    // They are immediately called once
+    (function createBoard() {
+        for (let i = 0; i < rows; i++) {
+            board[i] = []
+            for (let j = 0; j < columns; j++) {
+                board[i].push(Cell());
+            }
         }
-    }
+    })();
+
+    (function createDOMBoard() {
+        const gameBoard = document.querySelector(".board");
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < columns; j++) {
+                const cell = document.createElement("div");
+                cell.setAttribute("class", `cell row${i} col${j}`);
+                cell.textContent = "";
+                gameBoard.appendChild(cell);
+            }
+        }
+    }());
 
     const getMove = () => move;
     const getWinner = () => winner;
@@ -32,18 +48,7 @@ function Board() {
         })
 
     }
-    const createDOMBoard = () => {
-        const gameBoard = document.querySelector(".board");
-        for (let i = 0; i < rows; i++) {
-            for (let j = 0; j < columns; j++) {
-                const cell = document.createElement("div");
-                cell.setAttribute("class", `cell row${i} col${j}`);
-                cell.textContent = "0";
-                gameBoard.appendChild(cell);
-            }
-        }
-    
-    }
+
 
     const printBoard = () => {
         const boardWithValues = board.map((row) => row.map((cell) => cell.getMove()))
@@ -51,13 +56,12 @@ function Board() {
     }
 
     function putMove(row, column, playerMark) {
-        let targetDOMCell = document.querySelector(`.row${row}.col${column}`)
+
         let targetCell = board[row][column];
         // Cells with 0 are unfilled, otherwise they're already marked
         // only check the board if move is valid;
-        if (targetCell.getMove() === 0) {
-            targetDOMCell.textContent = playerMark;
-            targetCell.setMove(playerMark);
+        if (targetCell.getMove() === '.') {
+            targetCell.setMove(row, column, playerMark);
             move.isValid = true;
             boardStatus = checkBoard(row, column, playerMark);
             // if a pattern is found, set the winner
@@ -70,12 +74,50 @@ function Board() {
     }
 
     const checkBoard = (row, column, playerMark) => {
-        let currentRow = row === true ? 1 : row;
+        let currentRow = row;
         let currentCol = column;
         let currentMark = playerMark;
-        let patternFound, verticalCheck, horizontalCheck;
-        let diagonalCheck = false;
 
+        const highlightCell = (row, column) => {
+            let cell = document.querySelector(`.row${row}.col${column}`)
+            Object.assign(cell.style, {
+                boxShadow: "rgb(255, 0, 0) 0 0 1rem",
+                border: "1px solid rgb(255,0 ,0)"
+            })
+        }
+        const highLightPattern = (direction, isDown = false) => {
+            if (direction === "vertical") {
+                for (let row = 0; row < 3; row++) {
+                    highlightCell(row, currentCol);
+                }
+            }
+            if (direction === "horizontal") {
+                currentRow = currentRow === true ? 1 : currentRow;
+                for (let col = 0; col < 3; col++) {
+                    highlightCell(currentRow, col);
+                }
+            };
+            if (direction === "diagonal" && isDown === true) {
+                console.log(`What is the direction? ${direction} and is it going down? ${isDown}`)
+                let index = 0;
+                let rowIterations = [0, 1, 2]
+                let colIterations = [0, 1, 2]
+                while (index < 3) {
+                    highlightCell(rowIterations[index], colIterations[index])
+                    index++;
+                }
+            }
+            if (direction === "diagonal" && isDown === false) {
+                console.log(`What is the direction? ${direction} and is it going down? ${isDown}`)
+                let index = 0;
+                let rowIterations = [0, 1, 2]
+                let colIterations = [2, 1, 0]
+                while (index < 3) {
+                    highlightCell(rowIterations[index], colIterations[index])
+                    index++;
+                }
+            }
+        }
         const checkHorizontally = () => {
             currentRow = currentRow === true ? 1 : currentRow;
             for (let col = 0; col < 3; col++) {
@@ -83,6 +125,7 @@ function Board() {
                     return false
                 }
             }
+            highLightPattern("horizontal")
             return true
         }
         const checkVertically = () => {
@@ -91,6 +134,7 @@ function Board() {
                     return false
                 }
             }
+            highLightPattern("vertical")
             return true
         }
 
@@ -107,60 +151,72 @@ function Board() {
 
             function check(isCenter = false) {
                 /*
-                * Indexes for Diagonal patterns
+                * Indexes for Diagonal patterns going down (\) or going up (/)
                 * (0, 0) \                                  / (0, 2)
                 *       (1, 1) \                      / (1, 1)
                 *              (2, 2) \    OR   /(2, 0)
                 */
                 let rowIterations = currentRow === 2 ? [2, 1, 0] : [0, 1, 2]
                 let colIterations = currentCol === 2 ? [2, 1, 0] : [0, 1, 2]
+                let dPatternFound = true;
                 let index = 0;
-                let patternFound = true;
 
                 while (index < 3) {
-                    let rowIndex = rowIterations[index]
-                    let colIndex = colIterations[index]
+                    let rowIndex = rowIterations[index];
+                    let colIndex = colIterations[index];
                     if (board[rowIndex][colIndex].getMove() != currentMark) {
-                        patternFound = false
+                        dPatternFound = false
                         break;
                     }
                     index++;
+                    if (index === 2 && dPatternFound === true) {
+                        highLightPattern("diagonal", isDown = true)
+                        // Do not traverse the second diagonal even if at center
+                        // because a match is already found
+                        return dPatternFound;
+                    }
                 };
-
+                // A move at center can trigger a pattern match  in \ or / direction
+                // so check twice but with opposite index iterations
                 if (isCenter) {
-                    let index = 2
+                    index = 2
                     while (index >= 0) {
                         let rowIndex = rowIterations[index]
                         let colIndex = colIterations[index]
                         if (board[rowIndex][colIndex].getMove() != currentMark) {
-                            patternFound = false
+                            dPatternFound = false
                             break;
                         }
                         index--;
+                        if (index === 0 && dPatternFound === true)
+                            highLightPattern("diagonal", isDown = false)
                     }
                 }
-                return patternFound;
+                return dPatternFound;
             }
         }
 
-        diagonalCheck = checkDiagonally();
-        verticalCheck = checkVertically();
-        horizontalCheck = checkHorizontally();
         const getResult = () => {
+            let patternFound, verticalCheck, horizontalCheck, diagonalCheck;
+            diagonalCheck = checkDiagonally();
+            verticalCheck = checkVertically();
+            horizontalCheck = checkHorizontally();
             patternFound = verticalCheck || horizontalCheck || (diagonalCheck === false ? false : true)
             return patternFound;
         };
 
         return { getResult, playerMark }
     }
-    return { printBoard, putMove, getWinner, getMove, createDOMBoard }
+    return { printBoard, putMove, getWinner, getMove }
 }
 
 function Cell() {
-    let currentMove = 0;
+    let currentMove = '.';
 
-    function setMove(move) {
+    function setMove(row, column, move) {
+        let targetDOMCell = document.querySelector(`.row${row}.col${column}`)
         currentMove = move;
+        targetDOMCell.textContent = currentMove;
     }
 
     function getMove() {
@@ -186,7 +242,7 @@ function Players() {
 }
 
 function GamePlay() {
-    let board = Board();
+    let board = GameBoard();
     let players = Players();
     let activePlayer = players.player[0];
     let turn = 1;
@@ -225,7 +281,6 @@ function GamePlay() {
     }
 
     startNewRound();
-    board.createDOMBoard();
     return { playRound, getActivePlayer }
 }
 const game1 = GamePlay();
@@ -234,8 +289,8 @@ game1.playRound(0, 0);
 game1.playRound(0, 1);
 game1.playRound(0, 1);
 game1.playRound(2, 2);
-game1.playRound(1, 1);
 game1.playRound(2, 0);
+game1.playRound(1, 1);
 game1.playRound(2, 1);
 
 // at row=0, column=0
