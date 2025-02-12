@@ -3,6 +3,9 @@
     align-items: center;
     justify-content: center;
 }
+.body-container {
+    flex-flow: column nowrap;
+}
 body {
     padding: 5rem;
 }
@@ -14,10 +17,28 @@ body {
 .board > *  {
     border: .5px solid black;
     border-radius: 15px;
-    font-size: 80px;
     transition-duration: .5s;
-
+}
+button {
+    font-size: 80px;
+    border: none;
+    text-decoration: none;
+    background-color: transparent;
+    width: 100%;
+    height: 100%;
 }
 .board >*:hover {
     box-shadow: rgb(128, 127, 127) 0 0 1rem inset;
+}
+
+div[class$=game] > button {
+    width: 100%;
+    height: 100%;
+    border-radius: 15px;
+    font-size: 2rem;
+    padding: 1rem;
+    box-shadow: rgb(0,0,0,.8) .1rem .1rem 1rem;
+}
+div[class$=game] {
+    padding-top: 5rem;
 }

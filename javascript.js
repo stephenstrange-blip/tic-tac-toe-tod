@@ -28,8 +28,12 @@ function GameBoard() {
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < columns; j++) {
                 const cell = document.createElement("div");
-                cell.setAttribute("class", `cell row${i} col${j}`);
-                cell.textContent = "";
+                const button = document.createElement("button");
+
+                button.setAttribute("class", `row${i} col${j}`);
+                button.textContent = "";
+
+                cell.appendChild(button);
                 gameBoard.appendChild(cell);
             }
         }
@@ -51,6 +55,7 @@ function GameBoard() {
 
 
     const printBoard = () => {
+        console.log();
         const boardWithValues = board.map((row) => row.map((cell) => cell.getMove()))
         console.log(boardWithValues);
     }
@@ -138,69 +143,43 @@ function GameBoard() {
             return true
         }
 
-        const checkDiagonally = () => {
-            if (currentRow === 1 && currentCol === 1) {
-                return check(isCenter = true)
-            }
-            else if (currentRow + currentCol === 2 || currentRow === currentCol) {
-                return check(isCenter = false)
+        const checkDiagonally = (dRow = 0, dCol = 0, rowAddend = 1, colAddend = 1, match = 0) => {
+            let _dRow = dRow === true ? 1 : dRow;
+            let move = board[_dRow][dCol].getMove();
+
+            if (move !== currentMark) {
+                // Mismatch at the first edge cases prompts a diagonal check in the other direction
+                if (_dRow === 2 && dCol === 2) {
+                    return checkDiagonally(_dRow, 0, rowAddend = -1, colAddend = 1, match = 0)
+                }
+                // Second Edge case mismatch means no diagonal match at all
+                else if (_dRow === 0 && dCol === 2) {
+                    return false
+                }
             }
             else {
-                return false
-            }
-
-            function check(isCenter = false) {
-                /*
-                * Indexes for Diagonal patterns going down (\) or going up (/)
-                * (0, 0) \                                  / (0, 2)
-                *       (1, 1) \                      / (1, 1)
-                *              (2, 2) \    OR   /(2, 0)
-                */
-                let rowIterations = currentRow === 2 ? [2, 1, 0] : [0, 1, 2]
-                let colIterations = currentCol === 2 ? [2, 1, 0] : [0, 1, 2]
-                let dPatternFound = true;
-                let index = 0;
-
-                while (index < 3) {
-                    let rowIndex = rowIterations[index];
-                    let colIndex = colIterations[index];
-                    if (board[rowIndex][colIndex].getMove() != currentMark) {
-                        dPatternFound = false
-                        break;
-                    }
-                    index++;
-                    if (index === 2 && dPatternFound === true) {
-                        highLightPattern("diagonal", isDown = true)
-                        // Do not traverse the second diagonal even if at center
-                        // because a match is already found
-                        return dPatternFound;
-                    }
-                };
-                // A move at center can trigger a pattern match  in \ or / direction
-                // so check twice but with opposite index iterations
-                if (isCenter) {
-                    index = 2
-                    while (index >= 0) {
-                        let rowIndex = rowIterations[index]
-                        let colIndex = colIterations[index]
-                        if (board[rowIndex][colIndex].getMove() != currentMark) {
-                            dPatternFound = false
-                            break;
-                        }
-                        index--;
-                        if (index === 0 && dPatternFound === true)
-                            highLightPattern("diagonal", isDown = false)
-                    }
+                match++;
+                // A match of 3 consecutive is considered to be a pattern match
+                if (_dRow === 2 && dCol === 2 && match === 3) {
+                    highLightPattern("diagonal", isDown = true)
+                    return true
+                } else if (_dRow === 2 && dCol === 2 && match !== 3) {
+                    return checkDiagonally(_dRow, 0, rowAddend = -1, colAddend = 1, match = 0)
+                    // A match of 3 consecutive in the other diagonal direction
+                } else if (_dRow === 0 && dCol === 2 && match === 3) {
+                    highLightPattern("diagonal", isDown = false)
+                    return true
+                } else if (_dRow === 0 && dCol === 2) {
+                    return false
                 }
-                return dPatternFound;
             }
+            return checkDiagonally(_dRow + rowAddend, dCol + colAddend, rowAddend, colAddend, match)
         }
 
         const getResult = () => {
-            let patternFound, verticalCheck, horizontalCheck, diagonalCheck;
-            diagonalCheck = checkDiagonally();
-            verticalCheck = checkVertically();
-            horizontalCheck = checkHorizontally();
+            let diagonalCheck = checkDiagonally();
+            let verticalCheck = checkVertically();
+            let horizontalCheck = checkHorizontally();
             patternFound = verticalCheck || horizontalCheck || (diagonalCheck === false ? false : true)
             return patternFound;
         };
@@ -214,9 +193,9 @@ function Cell() {
     let currentMove = '.';
 
     function setMove(row, column, move) {
-        let targetDOMCell = document.querySelector(`.row${row}.col${column}`)
+        let targetDOMCellButton = document.querySelector(`.row${row}.col${column}`)
         currentMove = move;
-        targetDOMCell.textContent = currentMove;
+        targetDOMCellButton.textContent = currentMove;
     }
 
     function getMove() {
@@ -231,10 +210,12 @@ function Players() {
 
     let player = [{
         name: "Spriya",
-        mark: "X"
+        mark: "X",
+        score: 0
     }, {
         name: "Seojin",
-        mark: "O"
+        mark: "O",
+        score: 0
     }]
 
     return { player }
@@ -253,19 +234,40 @@ function GamePlay() {
         return activePlayer = activePlayer === player1 ? player2 : player1
     }
 
+    const getWinner = () => board.getWinner();
     const getActivePlayer = () => activePlayer;
+
+    const connectBtn = (button) => {
+        const [row, col] = button.classList;
+        const rowNum = parseInt(row[row.length - 1]);
+        const colNum = parseInt(col[col.length - 1]);
+        playRound(rowNum, colNum);
+    }
+    const connectBtnClick = () => {
+        const controller = new AbortController();
+        const buttons = document.querySelectorAll(".board button");
+        buttons.forEach((button) => {
+            // https://stackoverflow.com/questions/16310423/addeventlistener-calls-the-function-without-me-even-asking-it-to
+            button.addEventListener("click", () => {
+                connectBtn(button);
+                if (getWinner() !== undefined) {
+                    controller.abort();
+                }
+            }, { signal: controller.signal })
+        })
+    };
 
     const startNewRound = () => {
         board.printBoard();
         console.log(`It is ${getActivePlayer().name}'s turn!`)
-    }
+    };
 
     const playRound = (row, column) => {
+
         console.log(`Starting round ${turn}!`)
         board.putMove(row, column, getActivePlayer().mark)
-
-        const winner = board.getWinner();
         const move = board.getMove();
+        const winner = getWinner();
 
         if (winner === undefined && turn < 10 && move.isValid) {
             turn++;
@@ -275,24 +277,35 @@ function GamePlay() {
         else if (turn === 10)
             console.log("DRAW")
         if (winner) {
-            console.log(`Winner is ${winner.name}`)
+            winner.score++;
+            console.log(`Winner is ${winner.name} and score is ${winner.score}`)
             board.printBoard();
         }
     }
-
     startNewRound();
-    return { playRound, getActivePlayer }
+    connectBtnClick();
+    return { playRound, getActivePlayer, getWinner }
 }
-const game1 = GamePlay();
 
-game1.playRound(0, 0);
-game1.playRound(0, 1);
-game1.playRound(0, 1);
-game1.playRound(2, 2);
-game1.playRound(2, 0);
-game1.playRound(1, 1);
-game1.playRound(2, 1);
+function Main() {
+    let game;
 
+    const updateScreen = () => {
+        const board = document.querySelector(".board")
+        board.textContent = ''
+        game = GamePlay();
+    }
+    const [newGame, resetGame] = document.querySelectorAll("div[class$=game] > button");
+    newGame.addEventListener("click", () => {
+        updateScreen();
+    })
+    resetGame.addEventListener("click", () => {
+        updateScreen();
+        
+    })
+}
+Main();
+// const game1 = GamePlay();
 // at row=0, column=0
 // check horizontally at row 0, from column 0 - 2
 // check vertically at column 0, from row 0 - 2
