@@ -1,34 +1,71 @@
-.body-container, body, div[class^=cell] {
+.body-container, body, div[class^=cell], .console, .players, form{
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-flow: column nowrap;
+}
+p {
+    text-align: center;
+}
+body {
+    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    background: radial-gradient(circle, rgb(148, 175, 233) 0%, rgba(91,94,133,1) 97%); 
 }
 .body-container {
     flex-flow: column nowrap;
+    padding-left: 20%;
+    padding-top: 5rem;
 }
-body {
+button {
+    font-size: 80px;
+    text-decoration: none;
+    transition-duration: .5s;
+    background-color: transparent;
+
+    width: 100%;
+    height: 100%;
+    
+    border: 0;
+    border-radius: 15px;
+    box-shadow: rgb(0,0,0,.8) .1rem .1rem 1rem;
+}
+.console {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    height: 100%;
+    width: clamp(10rem, 30%, 500px);
+    justify-content: flex-start;
+    background-color: rgb(32, 75, 167);
+    box-shadow: rgb(32, 75, 167, .9) .1rem 0 .1rem, rgb(32, 75, 167, .7) .3rem 0 .3rem, rgb(32, 75, 167, .5) .5rem 0 .5rem;
+}
+.console > * {
+    /* border: .5px solid black; */
+    width: 100%;
     padding: 5rem;
+    padding-bottom: 0px;
 }
+.players {
+    flex-flow: row nowrap;
+    justify-content: space-between;
+}
+.players > * > * {
+    padding-top: 2rem;
+}
+
 .board {
     display: grid;
     grid-template: repeat(3, minmax(150px, 1fr)) / repeat(3, minmax(150px, 1fr));
     gap: 1rem;
 }
-.board > *  {
+.board > *, input  {
     border: .5px solid black;
     border-radius: 15px;
     transition-duration: .5s;
 }
-button {
-    font-size: 80px;
-    border: none;
-    text-decoration: none;
-    background-color: transparent;
-    width: 100%;
-    height: 100%;
-}
-.board >*:hover {
-    box-shadow: rgb(128, 127, 127) 0 0 1rem inset;
+
+.board >*:hover, dialog button:hover {
+    background-color: rgba(148, 175, 233, 0.884);
 }
 
 div[class$=game] > button {
@@ -37,8 +74,28 @@ div[class$=game] > button {
     border-radius: 15px;
     font-size: 2rem;
     padding: 1rem;
-    box-shadow: rgb(0,0,0,.8) .1rem .1rem 1rem;
+}
+div[class$=game] > button:hover {
+    background-color: rgb(148,175,233);
 }
 div[class$=game] {
     padding-top: 5rem;
+}
+
+dialog button {
+    height: 5%;
+    font-size: large;
+}
+dialog form input {
+    padding: .5rem;
+    height: 5%;
+    width: 100%;
+}
+dialog {
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translateX(-50%) translateY(-80%);
+    -moz-transform: translateX(-50%) translateY(-80%);
+    -ms-transform: translateX(-50%) translateY(-80%);
+    transform: translateX(-50%) translateY(-80%);
 }

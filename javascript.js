@@ -1,7 +1,7 @@
 // A target is the Cell() that a player marks during his move
 // A player's mark is either X or O for tic-tac-toe
 // Each player should input a row and column to determine where to input his mark
-function GameBoard() {
+function GameBoard(players) {
     const columns = 3;
     const rows = 3;
     const board = [];
@@ -43,16 +43,16 @@ function GameBoard() {
     const getWinner = () => winner;
 
     const setWinner = () => {
-        let players = Players().player;
+        let participants = players.player;
+        console.log(players)
         // check the mark on the checkBoard against the mark of the players
-        players.forEach((participant) => {
+        participants.forEach((participant) => {
             if (participant.mark === boardStatus.playerMark) {
                 winner = participant;
             }
         })
 
     }
-
 
     const printBoard = () => {
         console.log();
@@ -76,7 +76,7 @@ function GameBoard() {
             move.isValid = false;
             return
         }
-    }
+    }// connectBtnClick();
 
     const checkBoard = (row, column, playerMark) => {
         let currentRow = row;
@@ -148,24 +148,25 @@ function GameBoard() {
             let move = board[_dRow][dCol].getMove();
 
             if (move !== currentMark) {
-                // Mismatch at the first edge cases prompts a diagonal check in the other direction
+                // Mismatch at the first diagonal edge prompts a diagonal check in the other direction
                 if (_dRow === 2 && dCol === 2) {
                     return checkDiagonally(_dRow, 0, rowAddend = -1, colAddend = 1, match = 0)
                 }
-                // Second Edge case mismatch means no diagonal match at all
+                // Second Diagonal Edge mismatch means no diagonal match at all
                 else if (_dRow === 0 && dCol === 2) {
                     return false
                 }
             }
             else {
                 match++;
-                // A match of 3 consecutive is considered to be a pattern match
+                // 3 consecutive matches is considered to be a pattern match
                 if (_dRow === 2 && dCol === 2 && match === 3) {
                     highLightPattern("diagonal", isDown = true)
                     return true
+                    // Reverts the match count at the start of the second diagonal check
                 } else if (_dRow === 2 && dCol === 2 && match !== 3) {
                     return checkDiagonally(_dRow, 0, rowAddend = -1, colAddend = 1, match = 0)
-                    // A match of 3 consecutive in the other diagonal direction
+                    // Same with the other direction
                 } else if (_dRow === 0 && dCol === 2 && match === 3) {
                     highLightPattern("diagonal", isDown = false)
                     return true
@@ -209,11 +210,11 @@ function Cell() {
 function Players() {
 
     let player = [{
-        name: "Spriya",
+        name: "",
         mark: "X",
         score: 0
     }, {
-        name: "Seojin",
+        name: "",
         mark: "O",
         score: 0
     }]
@@ -222,11 +223,11 @@ function Players() {
 
 }
 
-function GamePlay() {
-    let board = GameBoard();
-    let players = Players();
+function GamePlay(startNewGame, players) {
+
+    let board = GameBoard(players);
     let activePlayer = players.player[0];
-    let turn = 1;
+    let turn = 0;
 
     function switchActivePlayer() {
         const player1 = players.player[0];
@@ -237,13 +238,69 @@ function GamePlay() {
     const getWinner = () => board.getWinner();
     const getActivePlayer = () => activePlayer;
 
+    const askForNames = () => {
+        const dialog = document.querySelector("dialog");
+        const confirmBtn = document.querySelector("#confirm");
+        const cancelBtn = document.querySelector("#cancel")
+        const [p1Name, p2Name] = document.querySelectorAll("input");
+        const board = document.querySelector(".board");
+
+        dialog.showModal();
+
+        cancelBtn.addEventListener("click", () => { 
+            board.textContent = '';
+            const continueBtn = document.querySelector(".continue-game > button");
+            continueBtn.setAttribute("disabled", "true")
+        })
+
+        dialog.addEventListener("close", () => {
+            const [p1NameOutput, p2NameOutput] = document.querySelectorAll("#name");
+            p1NameOutput.textContent = `${players.player[0].name}  (${players.player[0].mark})`;
+            p2NameOutput.textContent = `${players.player[1].name}  (${players.player[1].mark})`;
+        })
+
+        confirmBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            if (p1Name && p2Name) {
+                players.player[0].name = p1Name.value;
+                players.player[1].name = p2Name.value;
+            }
+            const continueBtn = document.querySelector(".continue-game > button");
+            continueBtn.removeAttribute("disabled");
+            dialog.close();
+        })
+
+    }
+    const resetScore = () => {
+        const scoreOutputs = document.querySelectorAll("div[id^=score]");
+        console.log(scoreOutputs);
+        scoreOutputs.forEach(output => output.textContent = "0")
+        players.player.forEach((participant) => {
+            participant.score = 0;
+        })
+    }
+    const updateScore = (winner) => {
+        let participants = players.player
+        console.log(participants)
+        participants.forEach((participant) => {
+            if (participant.mark === winner.mark) {
+                console.log(participants.indexOf(participant));
+                const scoreOutput = document.querySelector(`#score${participants.indexOf(participant) + 1}`)
+                console.log(participant.score, participant.name)
+                scoreOutput.textContent = participant.score;
+            }
+
+        })
+    }
+
     const connectBtn = (button) => {
         const [row, col] = button.classList;
         const rowNum = parseInt(row[row.length - 1]);
         const colNum = parseInt(col[col.length - 1]);
         playRound(rowNum, colNum);
     }
-    const connectBtnClick = () => {
+
+    const connectBtnClick = (() => {
         const controller = new AbortController();
         const buttons = document.querySelectorAll(".board button");
         buttons.forEach((button) => {
@@ -255,15 +312,19 @@ function GamePlay() {
                 }
             }, { signal: controller.signal })
         })
-    };
+    })();
 
     const startNewRound = () => {
+        if (turn === 0 && startNewGame) {
+            askForNames();
+            resetScore();
+        }
+
         board.printBoard();
         console.log(`It is ${getActivePlayer().name}'s turn!`)
     };
 
     const playRound = (row, column) => {
-
         console.log(`Starting round ${turn}!`)
         board.putMove(row, column, getActivePlayer().mark)
         const move = board.getMove();
@@ -277,67 +338,36 @@ function GamePlay() {
         else if (turn === 10)
             console.log("DRAW")
         if (winner) {
+            console.log(winner)
             winner.score++;
             console.log(`Winner is ${winner.name} and score is ${winner.score}`)
             board.printBoard();
+            updateScore(winner);
         }
     }
+
     startNewRound();
-    connectBtnClick();
     return { playRound, getActivePlayer, getWinner }
 }
 
 function Main() {
     let game;
-
-    const updateScreen = () => {
-        const board = document.querySelector(".board")
+    let players = Players();
+    const board = document.querySelector(".board")
+    const updateScreen = (isNewGame) => {
         board.textContent = ''
-        game = GamePlay();
+        game = GamePlay(startNewGame = isNewGame, players);
     }
-    const [newGame, resetGame] = document.querySelectorAll("div[class$=game] > button");
+    const [continueGame, newGame] = document.querySelectorAll("div[class$=game] > button");
     newGame.addEventListener("click", () => {
-        updateScreen();
+        updateScreen(isNewGame = true);
     })
-    resetGame.addEventListener("click", () => {
-        updateScreen();
-        
+
+    function handleContinue() {
+
+    }
+    continueGame.addEventListener("click", () => {
+        updateScreen(isNewGame = false);
     })
 }
 Main();
-// const game1 = GamePlay();
-// at row=0, column=0
-// check horizontally at row 0, from column 0 - 2
-// check vertically at column 0, from row 0 - 2
-// check diagonally at outer row loop 0 - 2, inner column loop 0 - 2
-// at row=0, column=1
-// check horizontally at row 0, from column 0 - 2
-// check vertically at column 1, from row 0 - 2
-// at row=0, column=2
-// check horizontally at row 0, from column 0 - 2
-// check vertically at column 2, from row 0 - 2
-// check diagonally at outer row loop 0 - 2, inner column loop 2 - 0
-
-// at row=1, column=0
-// check horizontally at row 1, from column 0 - 2
-// check vertically at column 0, from row 0 - 2
-// at row=1, column=1
-// check horizontally at row 1, from column 0 - 2
-// check vertically at column 1, from row 0 - 2
-// check diagonally at outer row loop 0 - 2, inner column loop 0 - 2
-// check diagonally at outer row loop 2 - 0, inner column loop 2 - 0
-// at row=1, column=2
-// check horizontally at row 1, from column 0 - 2
-// check vertically at column 2, from row 0 - 2
-
-// at row=2, column=0
-// check horizontally at row 2, from column 0 - 2
-// check vertically at column 0, from row 0 - 2
-// check diagonally at outer row loop 2 - 0, inner column loop 0 - 2
-// at row=2, column=1
-// check horizontally at row 2, from column 0 - 2
-// check vertically at column 1, from row 0 - 2
-// at row=2, column=2
-// check horizontally at row 2, from column 0 - 2
-// check vertically at column 2, from row 0 - 2
-// check diagonally at outer row loop 2 - 0, inner column loop 2 - 0
